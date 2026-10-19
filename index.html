@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>운빨의 신</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#101116;color:#f4f4f5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.game{width:min(620px,100%);background:#191a20;border:1px solid #30323b;border-radius:24px;padding:22px;box-shadow:0 20px 60px #0008}
+h1{margin:0 0 4px;text-align:center;font-size:32px}.sub{text-align:center;color:#a8abb5;margin-bottom:20px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.stat{background:#22242c;border-radius:14px;padding:12px;text-align:center}.label{font-size:12px;color:#a8abb5}.value{font-size:25px;font-weight:800;margin-top:3px}
+.card{margin-top:14px;background:#22242c;border-radius:18px;padding:22px;text-align:center}.lucklabel{font-size:13px;color:#a8abb5}.bar{height:10px;background:#363943;border-radius:99px;overflow:hidden;margin:8px 0}.fill{height:100%;width:50%;background:#8b7cff;border-radius:99px;transition:.3s}
+.result{min-height:130px;display:flex;flex-direction:column;justify-content:center;align-items:center;border:1px dashed #41444f;border-radius:15px;margin:18px 0}.result h2{margin:0;font-size:27px}.result p{margin:7px 0 0;color:#a8abb5}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}button{border:0;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;background:#30323b;color:#fff}button:hover{filter:brightness(1.12)}button:disabled{opacity:.4;cursor:not-allowed}.primary{width:100%;margin-top:10px;background:#8b7cff;color:#111}
+.history{text-align:left;margin-top:18px}.history-title{color:#a8abb5;font-size:13px;margin-bottom:8px}.logs{display:flex;flex-wrap:wrap;gap:6px}.chip{font-size:12px;background:#30323b;border-radius:99px;padding:6px 9px}
+.final{display:none;text-align:center}.final.show{display:block}.play.hide{display:none}.bigscore{font-size:55px;font-weight:900;margin:10px 0}.rank{font-size:25px;font-weight:850;margin-bottom:8px}
+@media(max-width:480px){body{padding:10px}.game{padding:16px}h1{font-size:28px}}
+</style>
+</head>
+<body>
+<main class="game">
+<section id="play" class="play">
+<h1>🎰 운빨의 신</h1><div class="sub">10번의 기회로 어디까지 올라갈 수 있을까?</div>
+<div class="stats">
+<div class="stat"><div class="label">점수</div><div class="value" id="score">0</div></div>
+<div class="stat"><div class="label">티켓</div><div class="value" id="tickets">10</div></div>
+<div class="stat"><div class="label">콤보</div><div class="value" id="combo">×0</div></div>
+</div>
+<div class="card">
+<div class="lucklabel">🍀 현재 운 <span id="lucktext">50 / 100</span></div>
+<div class="bar"><div class="fill" id="luckbar"></div></div>
+<div class="result"><h2 id="rtitle">준비됐어?</h2><p id="rdesc">운빨 스타일을 고르고 돌려봐.</p></div>
+<div class="choices">
+<button id="safe">🛡️ 안전하게</button>
+<button id="risk">🔥 한 방 노리기</button>
+</div>
+<button class="primary" id="roll">🎲 운빨 돌리기</button>
+<div class="history"><div class="history-title">최근 결과</div><div class="logs" id="logs"></div></div>
+</div>
+</section>
+<section id="final" class="card final">
+<div style="font-size:64px">🎰</div><h1>GAME OVER</h1>
+<div class="bigscore" id="finalscore">0점</div><div class="rank" id="rank"></div><p id="finaldesc" class="sub"></p>
+<button class="primary" id="restart">🔄 다시 하기</button>
+</section>
+</main>
+<script>
+let score=0,tickets=10,combo=0,luck=50,mode="safe";
+const $=id=>document.getElementById(id),clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+function update(){ $("score").textContent=score;$("tickets").textContent=tickets;$("combo").textContent="×"+combo;$("luckbar").style.width=luck+"%";$("lucktext").textContent=luck+" / 100";$("roll").disabled=tickets<=0 }
+function pick(){
+ let r=Math.random()*100;
+ let t=mode==="safe"?[[45,"small"],[30,"mid"],[15,"big"],[7,"bad"],[2.5,"disaster"],[.5,"jack"]]:[[30,"small"],[20,"mid"],[18,"big"],[14,"bad"],[12,"disaster"],[6,"jack"]];
+ let luckBoost=(luck-50)*.08;
+ t[0][0]+=luckBoost*.5;t[1][0]+=luckBoost*.25;t[3][0]-=luckBoost*.35;t[4][0]-=luckBoost*.2;
+ let sum=0,total=t.reduce((a,x)=>a+Math.max(0,x[0]),0),x=r/100*total;
+ for(const [p,k] of t){sum+=Math.max(0,p);if(x<=sum)return k}return"small";
+}
+function roll(){
+ if(tickets<=0)return;
+ const k=pick();tickets--;
+ let title,delta,luckDelta,good=false;
+ ({small:["🍀 작은 행운",10,3,true],mid:["💰 대박",30,6,true],big:["💎 초대박",60,10,true],bad:["☠️ 꽝",-20,-8,false],disaster:["💀 대참사",-50,-15,false],jack:["🎰 JACKPOT!",300,20,true]})[k];
+ const d={small:["🍀 작은 행운",10,3,true],mid:["💰 대박",30,6,true],big:["💎 초대박",60,10,true],bad:["☠️ 꽝",-20,-8,false],disaster:["💀 대참사",-50,-15,false],jack:["🎰 JACKPOT!",300,20,true]}[k];
+ [title,delta,luckDelta,good]=d;
+ if(good)combo++;else combo=0;
+ if(good&&combo>=2)delta*=combo;
+ score+=delta;luck=clamp(luck+luckDelta,0,100);
+ $("rtitle").textContent=title;$("rdesc").textContent=(delta>=0?"+":"")+delta+"점"+(good&&combo>=2?" · 콤보 ×"+combo:"");
+ const chip=document.createElement("span");chip.className="chip";chip.textContent=title+" "+(delta>=0?"+":"")+delta;$("logs").prepend(chip);
+ while($("logs").children.length>8)$("logs").lastElementChild.remove();update();
+ if(tickets===0)setTimeout(finish,600);
+}
+function finish(){
+ $("play").classList.add("hide");$("final").classList.add("show");$("finalscore").textContent=score+"점";
+ let rank,desc;if(score<=0){rank="💀 오늘 운 개망함";desc="오늘은 운빨이 도와주지 않았다."}else if(score<100){rank="🪨 평범";desc="무난했다."}else if(score<200){rank="🙂 운 좀 좋음";desc="평균보다 운이 좋았다."}else if(score<400){rank="🍀 행운아";desc="제법 운빨이 좋았다!"}else if(score<700){rank="🔥 운빨 고수";desc="이 정도면 운빨을 인정해야 한다."}else if(score<1000){rank="👑 운빨의 신";desc="오늘 운은 거의 치트 수준."}else{rank="🗿 인간이 아님";desc="이건 운빨이라고 부르기 힘들다."}$("rank").textContent=rank;$("finaldesc").textContent=desc+" 최고 콤보 ×"+combo+".";
+}
+function restart(){score=0;tickets=10;combo=0;luck=50;mode="safe";$("logs").innerHTML="";$("rtitle").textContent="준비됐어?";$("rdesc").textContent="운빨 스타일을 고르고 돌려봐.";$("play").classList.remove("hide");$("final").classList.remove("show");update()}
+$("safe").onclick=()=>{mode="safe";$("rtitle").textContent="🛡️ 안전 모드";$("rdesc").textContent="좋은 결과가 조금 더 잘 나오지만 한 방은 약해진다."};
+$("risk").onclick=()=>{mode="risk";$("rtitle").textContent="🔥 한 방 모드";$("rdesc").textContent="위험하지만 JACKPOT을 노릴 수 있다."};
+$("roll").onclick=roll;$("restart").onclick=restart;update();
+</script>
+</body>
+</html>
